@@ -79,7 +79,7 @@ class SpecialRequestController extends Controller
     }
 
     /**
-     * Review special request (Adviser or HoD)
+     * Review a special request (HoD or System Administrator)
      */
     public function review(Request $request, string $id): JsonResponse
     {
@@ -90,12 +90,12 @@ class SpecialRequestController extends Controller
 
         $user = $request->user();
         $roles = $user->roles->pluck('role_name')->toArray();
-        $allowedRoles = ['HEAD_OF_DEPARTMENT', 'ACADEMIC_ADVISER', 'FACULTY_COORDINATOR', 'CENTRAL_ADMIN'];
+        $allowedRoles = ['HEAD_OF_DEPARTMENT', 'SYSTEM_ADMIN'];
 
         if (!array_intersect($roles, $allowedRoles)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Only Academic Advisers, Heads of Department, and Faculty Coordinators can review petitions.',
+                'message' => 'Unauthorized. Only Heads of Department and System Administrators can review petitions.',
             ], 403);
         }
 
