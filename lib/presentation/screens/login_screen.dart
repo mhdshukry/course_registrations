@@ -17,6 +17,26 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  bool _showDemoCredentials = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedCredentials();
+  }
+
+  Future<void> _loadRememberedCredentials() async {
+    final remembered = await AuthService.getRememberedUsername();
+    final rememberMe = await AuthService.getRememberMe();
+    if (mounted) {
+      setState(() {
+        _rememberMe = rememberMe;
+        if (remembered != null && remembered.isNotEmpty) {
+          _usernameController.text = remembered;
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -32,12 +52,63 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authService.login(
       _usernameController.text,
       _passwordController.text,
+      rememberMe: _rememberMe,
     );
 
     if (success && mounted && authService.currentUser != null) {
       // Synchronize role with appService
       appService.switchRole(authService.currentUser!.role);
     }
+  }
+
+  void _handleQuickLogin(UserRole role) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final appService = Provider.of<AppService>(context, listen: false);
+    authService.quickLogin(role);
+    if (authService.currentUser != null) {
+      appService.switchRole(authService.currentUser!.role);
+    }
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.help_outline_rounded, color: RuslColors.primaryMaroon),
+            SizedBox(width: 8),
+            Text('Account Assistance'),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'For official RUSL account recovery or credential reset, please contact the Center for Information & Communication Technology (CICT) Helpdesk at support@cict.rjt.ac.lk.',
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Demo Credentials Hint:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Password for all demo accounts: RuslPass#2026',
+              style: TextStyle(fontSize: 12, color: RuslColors.textMuted),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -106,10 +177,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.school_rounded,
-                      color: RuslColors.darkText,
-                      size: 38,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/images/rusl_crest.jpg',
+                        fit: BoxFit.cover,
+                        semanticLabel: 'Rajarata University of Sri Lanka crest',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -351,7 +425,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: _showForgotPasswordDialog,
                               child: Text(
                                 RuslLocalization.tr('forgot_password'),
                                 style: const TextStyle(
@@ -401,6 +475,163 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                           ),
                         ),
+                        const SizedBox(height: 22),
+
+                        // Quick Demo Login Role Switcher
+                        Row(
+                          children: [
+                            const Expanded(child: Divider()),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
+                              child: Text(
+                                'QUICK DEMO ROLES',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ),
+                            const Expanded(child: Divider()),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _buildQuickLoginChip(
+                              UserRole.student,
+                              'Student',
+                              Icons.school_outlined,
+                            ),
+                            _buildQuickLoginChip(
+                              UserRole.headOfDepartment,
+                              'HoD',
+                              Icons.domain_outlined,
+                            ),
+                            _buildQuickLoginChip(
+                              UserRole.assistantRegistrar,
+                              'AR',
+                              Icons.verified_outlined,
+                            ),
+                            _buildQuickLoginChip(
+                              UserRole.dean,
+                              'Dean',
+                              Icons.account_balance_outlined,
+                            ),
+                            _buildQuickLoginChip(
+                              UserRole.systemAdmin,
+                              'Admin',
+                              Icons.admin_panel_settings_outlined,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: () => setState(
+                            () => _showDemoCredentials = !_showDemoCredentials,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 8,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _showDemoCredentials
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.help_outline_rounded,
+                                  size: 14,
+                                  color: RuslColors.primaryMaroon,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _showDemoCredentials
+                                      ? 'Hide Demo Credentials'
+                                      : 'View Demo Accounts & Passwords',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: RuslColors.primaryMaroon,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_showDemoCredentials) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: RuslColors.bgCream,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: RuslColors.borderGrey),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: const [
+                                    Text(
+                                      'Universal Password:',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: RuslColors.darkText,
+                                      ),
+                                    ),
+                                    Text(
+                                      'RuslPass#2026',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        fontFamily: 'monospace',
+                                        color: RuslColors.primaryMaroon,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 14),
+                                _demoAccountRow(
+                                  'Student',
+                                  'student_nafis',
+                                  'M. N. Mohamed Nafis',
+                                ),
+                                _demoAccountRow(
+                                  'HoD',
+                                  'hod_ict',
+                                  'Dr. Lahiru Jayasuriya',
+                                ),
+                                _demoAccountRow(
+                                  'Asst. Reg.',
+                                  'ar_fot',
+                                  'Ms. K. H. Gaurika Kahawala',
+                                ),
+                                _demoAccountRow(
+                                  'Dean',
+                                  'dean_fot',
+                                  'Prof. T. C. Bamunuarachchige',
+                                ),
+                                _demoAccountRow(
+                                  'System Admin',
+                                  'sysadmin',
+                                  'Mr. P. S. Palliyaguruge',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -436,6 +667,70 @@ class _LoginScreenState extends State<LoginScreen> {
             color: RuslColors.darkText,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuickLoginChip(UserRole role, String label, IconData icon) {
+    return ActionChip(
+      avatar: Icon(icon, size: 14, color: RuslColors.primaryMaroon),
+      label: Text(
+        label,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+      ),
+      backgroundColor: RuslColors.pureWhite,
+      side: BorderSide(color: Colors.grey.shade300),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      onPressed: () => _handleQuickLogin(role),
+    );
+  }
+
+  Widget _demoAccountRow(String role, String username, String name) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 76,
+            child: Text(
+              role,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: RuslColors.textMuted,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              username,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'monospace',
+                color: RuslColors.darkText,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              _usernameController.text = username;
+              _passwordController.text = 'RuslPass#2026';
+            },
+            borderRadius: BorderRadius.circular(4),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(
+                'Autofill',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: RuslColors.primaryMaroon,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
