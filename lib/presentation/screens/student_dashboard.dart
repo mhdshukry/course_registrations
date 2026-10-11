@@ -4,11 +4,14 @@ import '../../core/constants.dart';
 import '../../core/localization.dart';
 import '../../core/pdf_generator.dart';
 import '../../domain/models.dart';
-import '../../domain/validation_engine.dart';
 import '../../services/app_service.dart';
 import '../widgets/approval_timeline.dart';
 import '../widgets/custom_widgets.dart';
 
+/// Legacy monolithic tabbed student screen.
+/// Note: The production app shell in `main.dart` uses specialized modular screens:
+/// [StudentHomeScreen], [SubjectRegistrationProScreen], [RegistrationStatusProScreen],
+/// [StudentTimetableScreen], [SpecialRequestsScreen], and [StudentAcademicRecordScreen].
 class StudentDashboardScreen extends StatefulWidget {
   const StudentDashboardScreen({super.key});
 
@@ -18,7 +21,7 @@ class StudentDashboardScreen extends StatefulWidget {
 
 class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   int _activeTabIndex =
-      0; // 0: Available Courses, 1: My Selection, 2: Timetable, 3: Special Requests, 4: Approval Status, 5: Waiting Lists
+      0; // 0: Courses, 1: Selection, 2: Timetable, 3: Requests, 4: Status
   final TextEditingController _specialReasonController =
       TextEditingController();
   final TextEditingController _specialTypeController = TextEditingController(
@@ -50,24 +53,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         .where((c) => selectedOfferings.any((o) => o.courseId == c.id))
         .toList();
 
-    final prereqValidation = ValidationEngine.validatePrerequisites(
-      student: student,
-      selectedCourses: selectedCourses,
-      allCourses: appService.courses,
-    );
-    final creditValidation = ValidationEngine.validateCreditLimits(
-      student: student,
-      selectedCourses: selectedCourses,
-    );
-    final clashes = ValidationEngine.detectTimetableClashes(
-      selectedOfferings: selectedOfferings,
-      allCourses: appService.courses,
-    );
-
-    // Active waiting list promotions check
-    final promotedEntries = appService.waitingListEntries
-        .where((w) => w.isPromoted)
-        .toList();
+    final prereqValidation = appService.prerequisiteValidation;
+    final creditValidation = appService.creditLimitValidation;
+    final clashes = appService.selectedTimetableClashes;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -147,29 +135,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Promoted Waiting List Notification Banner
-          if (promotedEntries.isNotEmpty) ...[
-            for (var promo in promotedEntries)
-              _buildAlertBanner(
-                context,
-                '${RuslLocalization.tr("queue_promoted_msg")} [${promo.courseCode} — ${promo.courseTitle}]',
-                Icons.notification_important_rounded,
-                RuslColors.successGreen,
-                action: TextButton(
-                  onPressed: () {
-                    setState(() => _activeTabIndex = 5);
-                  },
-                  child: Text(
-                    RuslLocalization.tr('claim_seat'),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: RuslColors.successGreen,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-
           // Real-time Validation Warning / Error Banners
           if (!prereqValidation.isValid)
             ...prereqValidation.errors.map(
@@ -234,12 +199,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 isActive: _activeTabIndex == 4,
                 onTap: () => setState(() => _activeTabIndex = 4),
               ),
-              PillTab(
-                label:
-                    '${RuslLocalization.tr("tab_waiting_lists")} (${appService.waitingListEntries.where((w) => w.status != WaitingListStatus.cancelled).length})',
-                isActive: _activeTabIndex == 5,
-                onTap: () => setState(() => _activeTabIndex = 5),
-              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -257,16 +216,16 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
           // TAB 2: Timetable Visualizer
           if (_activeTabIndex == 2)
-            _buildTimetableGrid(selectedOfferings, appService),
+            _buildTimetableGrid(
+              appService.timetableEligibleOfferings,
+              appService,
+            ),
 
           // TAB 3: Special Requests Manager
           if (_activeTabIndex == 3) _buildSpecialRequestsView(appService),
 
           // TAB 4: Multi-Tier Approval Status & Verification Slip
           if (_activeTabIndex == 4) _buildApprovalStatusView(appService),
-
-          // TAB 5: Waiting List Queues & Seat Promotion Manager
-          if (_activeTabIndex == 5) _buildWaitingListsView(appService),
         ],
       ),
     );
@@ -492,50 +451,11 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 final isSelected = appService.selectedOfferingIds.contains(
                   offering.id,
                 );
-                final waitingEntry = appService.getWaitingListEntry(
-                  offering.id,
-                );
-                final isWaiting =
-                    waitingEntry != null &&
-                    waitingEntry.status == WaitingListStatus.waiting;
-                final isPromoted =
-                    waitingEntry != null && waitingEntry.isPromoted;
-
                 return CourseCardItem(
                   course: course,
                   offering: offering,
                   isSelected: isSelected,
-                  onToggle: () {
-                    final wasInWaiting = appService.isInWaitingList(
-                      offering.id,
-                    );
-                    appService.toggleCourseSelection(offering.id);
-                    if (!wasInWaiting && offering.isFull && !isSelected) {
-                      final entry = appService.getWaitingListEntry(offering.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${RuslLocalization.tr("waitlist_joined_msg")}: #${entry?.position ?? 1} for ${course.code}',
-                          ),
-                          backgroundColor: RuslColors.warningOrange,
-                        ),
-                      );
-                    }
-                  },
-                  isWaiting: isWaiting,
-                  waitingPosition: waitingEntry?.position,
-                  isPromoted: isPromoted,
-                  onClaimPromoted: () {
-                    appService.acceptPromotedSeat(offering.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(RuslLocalization.tr('seat_claimed_msg')),
-                        backgroundColor: RuslColors.successGreen,
-                      ),
-                    );
-                  },
-                  onLeaveWaiting: () =>
-                      appService.leaveWaitingList(offering.id),
+                  onToggle: () => appService.toggleCourseSelection(offering.id),
                 );
               },
             );
@@ -577,19 +497,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     List<CourseOffering> selectedOfferings,
     List<Course> selectedCourses,
   ) {
-    final prereqValidation = ValidationEngine.validatePrerequisites(
-      student: appService.activeStudent,
-      selectedCourses: selectedCourses,
-      allCourses: appService.courses,
-    );
-    final creditValidation = ValidationEngine.validateCreditLimits(
-      student: appService.activeStudent,
-      selectedCourses: selectedCourses,
-    );
-    final clashes = ValidationEngine.detectTimetableClashes(
-      selectedOfferings: selectedOfferings,
-      allCourses: appService.courses,
-    );
+    final prereqValidation = appService.prerequisiteValidation;
+    final creditValidation = appService.creditLimitValidation;
+    final clashes = appService.selectedTimetableClashes;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -699,7 +609,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                           const SnackBar(
                             backgroundColor: Colors.green,
                             content: Text(
-                              'Course registration submitted successfully to Academic Adviser.',
+                              'Course registration submitted successfully for Head of Department (HoD) endorsement.',
                             ),
                           ),
                         );
@@ -804,6 +714,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     AppService appService,
   ) {
     final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    final repeatRegistrations = appService.activeRepeatOrMedicalRegistrations;
+    final hasRepeatExemptions = repeatRegistrations.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -818,36 +730,148 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Weekly Timetable Schedule (${RuslLocalization.tr("tab_timetable")})',
-                style: const TextStyle(
-                  fontFamily: 'Urbanist',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: RuslColors.darkText,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: RuslColors.accentYellow,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              Expanded(
                 child: Text(
-                  '${selectedOfferings.length} Scheduled Courses',
+                  'Weekly Timetable Schedule (${RuslLocalization.tr("tab_timetable")})',
                   style: const TextStyle(
                     fontFamily: 'Urbanist',
-                    fontSize: 12,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
+                    color: RuslColors.darkText,
                   ),
                 ),
               ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: RuslColors.accentYellow,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${selectedOfferings.length} Scheduled Courses',
+                      style: const TextStyle(
+                        fontFamily: 'Urbanist',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (hasRepeatExemptions)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D9488).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF0D9488).withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Text(
+                        '${repeatRegistrations.length} Repeat/Medical (Exempt)',
+                        style: const TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F766E),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
+          const SizedBox(height: 16),
+          // Policy notification banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0D9488).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF0D9488).withValues(alpha: 0.3),
+              ),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF0F766E),
+                  size: 20,
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Lecture Attendance Policy: Under university regulations, students registered for Repeat or Medical concession subjects are exempt from lecture attendance. Repeat/medical subjects do not require weekly timetable slots and do not cause timetable clashes.',
+                    style: TextStyle(
+                      fontFamily: 'Urbanist',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF134E4A),
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
+          if (selectedOfferings.isEmpty && hasRepeatExemptions)
+            Container(
+              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.event_busy_rounded,
+                    color: Colors.amber.shade900,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'No Weekly Lectures Required',
+                          style: TextStyle(
+                            fontFamily: 'Urbanist',
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'All your currently registered subjects are Repeat or Medical exam-only modules. You do not need to attend lectures, and no timetable scheduling is required.',
+                          style: TextStyle(
+                            fontFamily: 'Urbanist',
+                            fontSize: 12,
+                            color: Colors.brown.shade800,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -960,6 +984,150 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               }).toList(),
             ),
           ),
+          if (hasRepeatExemptions) ...[
+            const SizedBox(height: 24),
+            const Divider(color: RuslColors.borderGrey),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.event_available_rounded,
+                    size: 18,
+                    color: Color(0xFF0F766E),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Attendance-Exempt Registered Subjects (Exam Only)',
+                        style: TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: RuslColors.darkText,
+                        ),
+                      ),
+                      Text(
+                        'These subjects are registered for examination only and are exempt from weekly lecture attendance.',
+                        style: TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontSize: 11,
+                          color: RuslColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...repeatRegistrations.map((record) {
+              final isMedical = record.isMedical;
+              final badgeLabel = isMedical
+                  ? 'MEDICAL CONCESSION (EXAM ONLY)'
+                  : record.isFailGrade
+                      ? 'FAILED REPEAT (EXAM ONLY)'
+                      : 'GRADE UPGRADE (EXAM ONLY)';
+              final badgeColor = isMedical
+                  ? const Color(0xFF2563EB)
+                  : record.isFailGrade
+                      ? RuslColors.errorRed
+                      : RuslColors.warningOrange;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: RuslColors.cardSubtle,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: RuslColors.borderGrey),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                record.courseCode,
+                                style: const TextStyle(
+                                  fontFamily: 'Urbanist',
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: badgeColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: badgeColor.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Text(
+                                  badgeLabel,
+                                  style: TextStyle(
+                                    fontFamily: 'Urbanist',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 10,
+                                    color: badgeColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            record.courseTitle,
+                            style: const TextStyle(
+                              fontFamily: 'Urbanist',
+                              fontSize: 12,
+                              color: RuslColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D9488).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'No Lectures',
+                        style: TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          color: Color(0xFF0F766E),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
         ],
       ),
     );
@@ -991,7 +1159,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            initialValue: _specialTypeController.text,
+            initialValue: _specialTypeController.text.isNotEmpty
+                ? _specialTypeController.text
+                : 'Credit Overload',
             items: [
               DropdownMenuItem(
                 value: 'Credit Overload',
@@ -1130,14 +1300,14 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: req.status == 'Approved'
+                          color: req.status == SpecialRequestStatus.approved
                               ? RuslColors.accentYellow
                               : RuslColors.cardSubtle,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: RuslColors.borderGrey),
                         ),
                         child: Text(
-                          req.status,
+                          req.status.label,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
@@ -1238,6 +1408,29 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   ),
                 ),
               ),
+              if (status == RegistrationStatus.registered ||
+                  status == RegistrationStatus.locked) ...[
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    AdmissionCardPdfGenerator.download(
+                      student: student,
+                      courses: selectedCourses,
+                      verificationCode: appService.verificationToken,
+                    );
+                  },
+                  icon: const Icon(Icons.badge_rounded, size: 18),
+                  label: const Text('Download Examination Admission'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: RuslColors.darkText,
+                    foregroundColor: RuslColors.accentYellow,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1245,6 +1438,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildWaitingListsView(AppService appService) {
     final activeEntries = appService.waitingListEntries
         .where((w) => w.status != WaitingListStatus.cancelled)
