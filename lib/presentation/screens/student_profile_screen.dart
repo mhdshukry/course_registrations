@@ -7,7 +7,8 @@ class StudentProfileScreen extends StatelessWidget {
   const StudentProfileScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    final student = context.watch<AppService>().activeStudent;
+    final app = context.watch<AppService>();
+    final student = app.activeStudent;
     final rows = <(String, String)>[
       ('Registration number', student.registrationNumber),
       ('Full name', student.fullName),
@@ -16,8 +17,13 @@ class StudentProfileScreen extends StatelessWidget {
       ('Degree programme', student.programmeName),
       ('Curriculum', student.curriculumVersion),
       ('Current level', '${student.currentLevel}'),
-      ('Current semester', '${student.currentSemester}'),
-      ('Current CGPA', '3.42'),
+      ('Current semester', '${student.currentSemester} (In Progress)'),
+      (
+        'Current CGPA',
+        '${app.currentCgpa > 0 ? app.currentCgpa.toStringAsFixed(2) : '3.79'} (${app.currentDegreeClass.label})',
+      ),
+      ('Degree Classification', app.currentDegreeClass.fullName),
+      ('Completed Credits', '${app.completedAcademicCredits} / 120'),
     ];
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -67,6 +73,34 @@ class StudentProfileScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: RuslColors.pureWhite,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: RuslColors.borderGrey),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'BICT (Hons) Degree Completion Requirements',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 10),
+              Text('• Minimum 120 total credits and all compulsory courses'),
+              Text('• Core Computing/IT: minimum 30 credits'),
+              Text('• Mathematics: minimum 6 credits'),
+              Text('• Management, Commerce and Accounting: minimum 6 credits'),
+              Text('• Professional Practice: minimum 6 credits'),
+              Text('• English and Communication Skills: minimum 6 credits'),
+              Text('• Industrial Training: 6 credits'),
+              Text('• Final Year Project: 8 credits'),
+              Text('• Minimum GPA 2.00 and completion within 6 academic years'),
             ],
           ),
         ),
