@@ -186,7 +186,7 @@ class RuslPdfGenerator {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   _buildPdfSignature('Student Signature'),
-                  _buildPdfSignature('Academic Adviser Approval'),
+                  _buildPdfSignature('Head of Department (HoD) Endorsement'),
                   _buildPdfSignature('Assistant Registrar (Faculty)'),
                 ],
               ),
@@ -301,6 +301,7 @@ class PdfSlipGenerator {
     required int semesterNumber,
     required String verificationCode,
     required String status,
+    String documentTitle = 'OFFICIAL COURSE REGISTRATION RECORD',
   }) async {
     final pdf = pw.Document();
 
@@ -334,7 +335,7 @@ class PdfSlipGenerator {
                         ),
                       ),
                       pw.Text(
-                        'OFFICIAL COURSE REGISTRATION RECORD',
+                        documentTitle,
                         style: pw.TextStyle(
                           fontSize: 13,
                           fontWeight: pw.FontWeight.bold,
@@ -516,7 +517,7 @@ class PdfSlipGenerator {
                         color: PdfColors.grey500,
                       ),
                       pw.Text(
-                        'Adviser Approval',
+                        'HoD Endorsement',
                         style: const pw.TextStyle(fontSize: 9),
                       ),
                     ],
@@ -557,6 +558,132 @@ class PdfSlipGenerator {
       bytes: bytes,
       filename:
           'RUSL_Record_${student.registrationNumber.replaceAll('/', '_')}.pdf',
+    );
+  }
+}
+
+class AdmissionCardPdfGenerator {
+  static Future<Uint8List> generate({
+    required StudentProfile student,
+    required List<Course> courses,
+    required String verificationCode,
+  }) async {
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(36),
+        build: (_) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(18),
+              color: PdfColors.amber100,
+              child: pw.Column(
+                children: [
+                  pw.Text(
+                    'RAJARATA UNIVERSITY OF SRI LANKA',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 5),
+                  pw.Text('EXAMINATION ADMISSION CARD - 2025/2026 SEMESTER 1'),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 22),
+            _admissionRow('Student', student.fullName),
+            _admissionRow('Registration No.', student.registrationNumber),
+            _admissionRow('Programme', student.programmeName),
+            _admissionRow('Faculty', student.facultyName),
+            _admissionRow('Examination Index', 'FOT/EX/2026/045'),
+            pw.SizedBox(height: 18),
+            pw.Text(
+              'Approved Examination Modules',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            pw.TableHelper.fromTextArray(
+              headers: const ['Course Code', 'Course Title', 'Credits'],
+              data: courses
+                  .map(
+                    (course) => [
+                      course.code,
+                      course.title,
+                      '${course.creditValue}',
+                    ],
+                  )
+                  .toList(),
+              headerDecoration: const pw.BoxDecoration(
+                color: PdfColors.grey300,
+              ),
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              headerStyle: pw.TextStyle(
+                fontSize: 9,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.Spacer(),
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey500),
+              ),
+              child: pw.Text(
+                'This admission is valid only with the University Identity Card. '
+                'Verification code: $verificationCode',
+                style: const pw.TextStyle(fontSize: 10),
+              ),
+            ),
+            pw.SizedBox(height: 32),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                RuslPdfGenerator._buildPdfSignature('Candidate Signature'),
+                RuslPdfGenerator._buildPdfSignature('Assistant Registrar'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    return pdf.save();
+  }
+
+  static pw.Widget _admissionRow(String label, String value) => pw.Padding(
+    padding: const pw.EdgeInsets.symmetric(vertical: 4),
+    child: pw.Row(
+      children: [
+        pw.SizedBox(
+          width: 125,
+          child: pw.Text(
+            label,
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          ),
+        ),
+        pw.Expanded(child: pw.Text(value)),
+      ],
+    ),
+  );
+
+  static Future<void> download({
+    required StudentProfile student,
+    required List<Course> courses,
+    required String verificationCode,
+  }) async {
+    final bytes = await generate(
+      student: student,
+      courses: courses,
+      verificationCode: verificationCode,
+    );
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename:
+          'RUSL_Admission_${student.registrationNumber.replaceAll('/', '_')}.pdf',
     );
   }
 }
