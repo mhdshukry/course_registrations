@@ -6,6 +6,8 @@ abstract class AcademicRepository {
   List<Department> getDepartments();
   List<Course> getCourses();
   List<CourseOffering> getCourseOfferings();
+  List<DegreeProgramme> getDegreeProgrammes();
+  List<Curriculum> getCurriculums();
 }
 
 class MockAcademicRepository implements AcademicRepository {
@@ -13,6 +15,8 @@ class MockAcademicRepository implements AcademicRepository {
   List<Department>? _departments;
   List<Course>? _courses;
   List<CourseOffering>? _offerings;
+  List<DegreeProgramme>? _degreeProgrammes;
+  List<Curriculum>? _curriculums;
 
   @override
   List<Faculty> getFaculties() {
@@ -37,4 +41,17 @@ class MockAcademicRepository implements AcademicRepository {
     _offerings ??= MockData.getCourseOfferings();
     return _offerings!;
   }
+
+  @override
+  List<DegreeProgramme> getDegreeProgrammes() {
+    _degreeProgrammes ??= MockData.getDegreeProgrammes();
+    return _degreeProgrammes!;
+  }
+
+  @override
+  List<Curriculum> getCurriculums() {
+    _curriculums ??= MockData.getCurriculums();
+    return _curriculums!;
+  }
 }
+
