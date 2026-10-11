@@ -7,8 +7,11 @@ abstract class NotificationRepository {
   void markAsRead(String id);
   void markAllAsRead();
 
+  void setNotifications(List<AppNotification> notifications);
+
   List<AuditLog> getAuditLogs();
   void addAuditLog(AuditLog log);
+  void setAuditLogs(List<AuditLog> logs);
 }
 
 class MockNotificationRepository implements NotificationRepository {
@@ -25,6 +28,11 @@ class MockNotificationRepository implements NotificationRepository {
   void addNotification(AppNotification notification) {
     _notifications ??= MockData.getInitialNotifications();
     _notifications!.insert(0, notification);
+  }
+
+  @override
+  void setNotifications(List<AppNotification> notifications) {
+    _notifications = List.from(notifications);
   }
 
   @override
@@ -55,5 +63,10 @@ class MockNotificationRepository implements NotificationRepository {
   void addAuditLog(AuditLog log) {
     _auditLogs ??= MockData.getAuditLogs();
     _auditLogs!.insert(0, log);
+  }
+
+  @override
+  void setAuditLogs(List<AuditLog> logs) {
+    _auditLogs = List.from(logs);
   }
 }
