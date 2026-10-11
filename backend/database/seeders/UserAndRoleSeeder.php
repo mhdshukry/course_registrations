@@ -18,12 +18,8 @@ class UserAndRoleSeeder extends Seeder
         // 1. Roles
         $roles = [
             ['role_id' => 'r_student',     'role_name' => 'STUDENT'],
-            ['role_id' => 'r_adviser',     'role_name' => 'ACADEMIC_ADVISER'],
-            ['role_id' => 'r_lecturer',    'role_name' => 'LECTURER'],
             ['role_id' => 'r_hod',         'role_name' => 'HEAD_OF_DEPARTMENT'],
-            ['role_id' => 'r_coordinator', 'role_name' => 'FACULTY_COORDINATOR'],
             ['role_id' => 'r_ar',          'role_name' => 'ASSISTANT_REGISTRAR'],
-            ['role_id' => 'r_central',     'role_name' => 'CENTRAL_ADMIN'],
             ['role_id' => 'r_sysadmin',    'role_name' => 'SYSTEM_ADMIN'],
         ];
 
@@ -36,12 +32,8 @@ class UserAndRoleSeeder extends Seeder
         // 2. Users
         $users = [
             ['user_id' => 'u_std01', 'username' => 'student_nafis',  'email' => 'student.nafis@rjt.ac.lk',   'role_id' => 'r_student',     'faculty_id' => 'f_fot', 'department_id' => 'd_ict'],
-            ['user_id' => 'u_adv01', 'username' => 'adviser_chanda', 'email' => 'chandanajay@rjt.ac.lk',     'role_id' => 'r_adviser',     'faculty_id' => 'f_fot', 'department_id' => 'd_ict'],
-            ['user_id' => 'u_lec01', 'username' => 'lecturer_sarah', 'email' => 'sarah.johnson@rjt.ac.lk',   'role_id' => 'r_lecturer',    'faculty_id' => 'f_fot', 'department_id' => 'd_ict'],
             ['user_id' => 'u_hod01', 'username' => 'hod_perera',     'email' => 'sarath.perera@rjt.ac.lk',   'role_id' => 'r_hod',         'faculty_id' => 'f_fot', 'department_id' => 'd_ict'],
-            ['user_id' => 'u_coo01', 'username' => 'coord_kanthi',   'email' => 'kanthi.silva@rjt.ac.lk',    'role_id' => 'r_coordinator', 'faculty_id' => 'f_fot', 'department_id' => 'd_ict'],
             ['user_id' => 'u_ar001', 'username' => 'ar_dilhani',     'email' => 'ar.fot@rjt.ac.lk',          'role_id' => 'r_ar',          'faculty_id' => 'f_fot', 'department_id' => null],
-            ['user_id' => 'u_cen01', 'username' => 'central_admin',  'email' => 'registration@rjt.ac.lk',    'role_id' => 'r_central',     'faculty_id' => null,    'department_id' => null],
             ['user_id' => 'u_sys01', 'username' => 'sys_admin',      'email' => 'itcenter@rjt.ac.lk',        'role_id' => 'r_sysadmin',    'faculty_id' => null,    'department_id' => null],
         ];
 
@@ -101,7 +93,6 @@ class UserAndRoleSeeder extends Seeder
 
         // 5. Staff Profiles
         $staffMembers = [
-            ['staff_id' => 'stf_adv', 'user_id' => 'u_adv01', 'employee_number' => 'EMP-0101', 'faculty_id' => 'f_fot', 'department_id' => 'd_ict', 'designation' => 'Senior Lecturer & Academic Adviser'],
             ['staff_id' => 'stf_lec', 'user_id' => 'u_lec01', 'employee_number' => 'EMP-0102', 'faculty_id' => 'f_fot', 'department_id' => 'd_ict', 'designation' => 'Lecturer (Probationary)'],
             ['staff_id' => 'stf_hod', 'user_id' => 'u_hod01', 'employee_number' => 'EMP-0100', 'faculty_id' => 'f_fot', 'department_id' => 'd_ict', 'designation' => 'Head of Department / Associate Prof'],
             ['staff_id' => 'stf_coo', 'user_id' => 'u_coo01', 'employee_number' => 'EMP-0103', 'faculty_id' => 'f_fot', 'department_id' => 'd_ict', 'designation' => 'Faculty Academic Coordinator'],
