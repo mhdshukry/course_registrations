@@ -38,8 +38,10 @@ class StudentHomeScreen extends StatelessWidget {
                   width,
                   Icons.school_outlined,
                   'Current CGPA',
-                  '3.42',
-                  'Updated after the latest published results',
+                  app.currentCgpa > 0
+                      ? app.currentCgpa.toStringAsFixed(2)
+                      : '3.79',
+                  '${app.currentDegreeClass.fullName} (${app.currentDegreeClass.criteria})',
                 ),
                 _summaryCard(
                   width,
