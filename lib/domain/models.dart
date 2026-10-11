@@ -128,8 +128,8 @@ class CourseOffering {
     required this.lecturerName,
     required this.maxCapacity,
     this.currentRegisteredCount = 0,
-    required this.slots,
-  });
+    required List<TimetableSlot> slots,
+  }) : slots = List<TimetableSlot>.of(slots);
 
   bool get isFull => currentRegisteredCount >= maxCapacity;
 }
@@ -228,6 +228,29 @@ class CourseRegistrationRecord {
   });
 }
 
+enum SpecialRequestStatus {
+  pending,
+  approved,
+  rejected;
+
+  String get label => switch (this) {
+    SpecialRequestStatus.pending => 'Pending',
+    SpecialRequestStatus.approved => 'Approved',
+    SpecialRequestStatus.rejected => 'Rejected',
+  };
+
+  static SpecialRequestStatus fromString(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'approved':
+        return SpecialRequestStatus.approved;
+      case 'rejected':
+        return SpecialRequestStatus.rejected;
+      default:
+        return SpecialRequestStatus.pending;
+    }
+  }
+}
+
 class SpecialRequest {
   final String id;
   final String studentId;
@@ -235,7 +258,7 @@ class SpecialRequest {
   final String
   requestType; // "Credit Overload", "Prerequisite Waiver", "Late Registration"
   final String explanation;
-  final String status; // "Pending", "Approved", "Rejected"
+  final SpecialRequestStatus status;
   final DateTime submittedAt;
 
   SpecialRequest({
@@ -265,6 +288,194 @@ class AuditLog {
     required this.details,
     required this.timestamp,
   });
+}
+
+enum AcademicRecordStatus { completed, medical, dropped }
+
+extension AcademicRecordStatusExtension on AcademicRecordStatus {
+  String get label => switch (this) {
+    AcademicRecordStatus.completed => 'Completed',
+    AcademicRecordStatus.medical => 'Medical',
+    AcademicRecordStatus.dropped => 'Dropped',
+  };
+}
+
+enum UniversityResultType { pass, repeat, fail }
+
+enum DegreeClassStanding {
+  firstClass,
+  secondUpper,
+  secondLower,
+  pass,
+  batchMiss;
+
+  String get label => switch (this) {
+    DegreeClassStanding.firstClass => '1st Class',
+    DegreeClassStanding.secondUpper => '2nd Class Upper',
+    DegreeClassStanding.secondLower => '2nd Class Lower',
+    DegreeClassStanding.pass => 'Pass',
+    DegreeClassStanding.batchMiss => 'Batch Miss (<2.0)',
+  };
+
+  String get fullName => switch (this) {
+    DegreeClassStanding.firstClass => 'First Class Honours (1st Class)',
+    DegreeClassStanding.secondUpper => 'Second Class (Upper Division)',
+    DegreeClassStanding.secondLower => 'Second Class (Lower Division)',
+    DegreeClassStanding.pass => 'General Pass',
+    DegreeClassStanding.batchMiss => 'Batch Miss (< 2.00)',
+  };
+
+  String get criteria => switch (this) {
+    DegreeClassStanding.firstClass => 'CGPA ≥ 3.70',
+    DegreeClassStanding.secondUpper => '3.50 ≤ CGPA < 3.70',
+    DegreeClassStanding.secondLower => '3.00 ≤ CGPA < 3.50',
+    DegreeClassStanding.pass => '2.00 ≤ CGPA < 3.00',
+    DegreeClassStanding.batchMiss => 'CGPA < 2.00',
+  };
+
+  static DegreeClassStanding fromGpa(double gpa) {
+    if (gpa >= 3.70) return DegreeClassStanding.firstClass;
+    if (gpa >= 3.50) return DegreeClassStanding.secondUpper;
+    if (gpa >= 3.00) return DegreeClassStanding.secondLower;
+    if (gpa >= 2.00) return DegreeClassStanding.pass;
+    return DegreeClassStanding.batchMiss;
+  }
+}
+
+class UniversityGradingSystem {
+  /// Pass: A+, A, A-, B+, B, B-, C+, C (≥ 2.0)
+  static const passGrades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C'];
+
+  /// Repeat: C-, D+, D, D- (< 2.0, eligible to repeat for upgrade up to C)
+  static const repeatGrades = ['C-', 'D+', 'D', 'D-'];
+
+  /// Fail: F, E, FAIL, REFERRED, AB (0.0, must repeat)
+  static const failGrades = ['F', 'E', 'FAIL', 'REFERRED', 'AB'];
+
+  static double gradeToPoint(String grade) {
+    return switch (grade.toUpperCase().trim()) {
+      'A+' || 'A' => 4.0,
+      'A-' => 3.7,
+      'B+' => 3.3,
+      'B' => 3.0,
+      'B-' => 2.7,
+      'C+' => 2.3,
+      'C' => 2.0,
+      'C-' => 1.7,
+      'D+' => 1.3,
+      'D' => 1.0,
+      'D-' => 0.7,
+      _ => 0.0,
+    };
+  }
+
+  static UniversityResultType? resultTypeFor(String? grade) {
+    if (grade == null) return null;
+    final g = grade.toUpperCase().trim();
+    if (passGrades.contains(g)) return UniversityResultType.pass;
+    if (repeatGrades.contains(g)) return UniversityResultType.repeat;
+    if (failGrades.contains(g)) return UniversityResultType.fail;
+    return null;
+  }
+
+  static bool isPass(String? grade) =>
+      resultTypeFor(grade) == UniversityResultType.pass;
+
+  static bool isRepeat(String? grade) =>
+      resultTypeFor(grade) == UniversityResultType.repeat;
+
+  static bool isFail(String? grade) =>
+      resultTypeFor(grade) == UniversityResultType.fail;
+}
+
+class AcademicCourseRecord {
+  final String id;
+  final String courseCode;
+  final String courseTitle;
+  final String academicYear;
+  final int level;
+  final int semester;
+  final int credits;
+  String? grade;
+  AcademicRecordStatus status;
+  DateTime updatedAt;
+
+  AcademicCourseRecord({
+    required this.id,
+    required this.courseCode,
+    required this.courseTitle,
+    required this.academicYear,
+    this.level = 1,
+    required this.semester,
+    required this.credits,
+    this.grade,
+    required this.status,
+    required this.updatedAt,
+  });
+
+  AcademicCourseRecord copyWith({
+    String? id,
+    String? courseCode,
+    String? courseTitle,
+    String? academicYear,
+    int? level,
+    int? semester,
+    int? credits,
+    String? grade,
+    AcademicRecordStatus? status,
+    DateTime? updatedAt,
+  }) {
+    return AcademicCourseRecord(
+      id: id ?? this.id,
+      courseCode: courseCode ?? this.courseCode,
+      courseTitle: courseTitle ?? this.courseTitle,
+      academicYear: academicYear ?? this.academicYear,
+      level: level ?? this.level,
+      semester: semester ?? this.semester,
+      credits: credits ?? this.credits,
+      grade: grade ?? this.grade,
+      status: status ?? this.status,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  String get semesterLabel => 'Level $level Sem $semester';
+
+  /// Under faculty regulations:
+  /// - Dropped subjects CANNOT be registered again.
+  /// - Medical concession or Failed / Repeat results CAN be registered again.
+  bool get isDropped => status == AcademicRecordStatus.dropped;
+  bool get isMedical => status == AcademicRecordStatus.medical;
+
+  bool get isPassGrade => UniversityGradingSystem.isPass(grade);
+  bool get isRepeatGrade => UniversityGradingSystem.isRepeat(grade);
+  bool get isFailGrade => UniversityGradingSystem.isFail(grade);
+
+  bool get isFailedResult => isFailGrade;
+
+  bool get canRegisterAgain {
+    if (isDropped) return false;
+    if (isMedical) return true;
+    return isRepeatGrade || isFailGrade;
+  }
+
+  String get repeatEligibilityLabel {
+    if (isDropped) {
+      return 'Dropped (Cannot re-register)';
+    }
+    if (isMedical) {
+      return 'Medical Concession — Eligible to re-register';
+    }
+    if (isFailGrade) {
+      final g = grade?.trim().toUpperCase() ?? 'F';
+      return 'Failed Result ($g) — Must re-register';
+    }
+    if (isRepeatGrade) {
+      final g = grade?.trim().toUpperCase() ?? 'Repeat';
+      return 'Repeat to Upgrade ($g) — Eligible to re-register';
+    }
+    return 'Pass (Completed)';
+  }
 }
 
 enum WaitingListStatus { waiting, promoted, expired, cancelled }
