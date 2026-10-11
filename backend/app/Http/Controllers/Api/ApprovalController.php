@@ -23,17 +23,18 @@ class ApprovalController extends Controller
         $roles = $user->roles->pluck('role_name')->toArray();
 
         $applicableStatuses = [];
-        if (in_array('ACADEMIC_ADVISER', $roles)) {
-            $applicableStatuses[] = RegistrationStatusEnum::SUBMITTED->value;
-        }
-        if (in_array('HEAD_OF_DEPARTMENT', $roles)) {
-            $applicableStatuses[] = RegistrationStatusEnum::ADVISER_APPROVED->value;
-        }
-        if (in_array('FACULTY_COORDINATOR', $roles)) {
-            $applicableStatuses[] = RegistrationStatusEnum::HOD_APPROVED->value;
-        }
-        if (in_array('ASSISTANT_REGISTRAR', $roles) || in_array('CENTRAL_ADMIN', $roles)) {
-            $applicableStatuses[] = RegistrationStatusEnum::FACULTY_APPROVED->value;
+        if (in_array('SYSTEM_ADMIN', $roles)) {
+            $applicableStatuses = [
+                RegistrationStatusEnum::SUBMITTED->value,
+                RegistrationStatusEnum::HOD_APPROVED->value,
+            ];
+        } else {
+            if (in_array('HEAD_OF_DEPARTMENT', $roles)) {
+                $applicableStatuses[] = RegistrationStatusEnum::SUBMITTED->value;
+            }
+            if (in_array('ASSISTANT_REGISTRAR', $roles)) {
+                $applicableStatuses[] = RegistrationStatusEnum::HOD_APPROVED->value;
+            }
         }
 
         if (empty($applicableStatuses)) {
@@ -48,16 +49,18 @@ class ApprovalController extends Controller
             'registrationCourses.offering.course',
         ])->whereIn('registration_status', $applicableStatuses);
 
-        // Tenant Scoping: Department scope for Advisers and HoDs
-        if ($user->staff && $user->staff->department_id && !in_array('CENTRAL_ADMIN', $roles) && !in_array('ASSISTANT_REGISTRAR', $roles) && !in_array('FACULTY_COORDINATOR', $roles)) {
-            $query->whereHas('student', function ($q) use ($user) {
-                $q->where('department_id', $user->staff->department_id);
-            });
-        } elseif ($user->staff && $user->staff->faculty_id && !in_array('CENTRAL_ADMIN', $roles)) {
-            // Faculty scope for Coordinators and ARs
-            $query->whereHas('student', function ($q) use ($user) {
-                $q->where('faculty_id', $user->staff->faculty_id);
-            });
+        // Tenant Scoping: Department scope for HoDs (SYSTEM_ADMIN has global scope)
+        if (!in_array('SYSTEM_ADMIN', $roles)) {
+            if ($user->staff && $user->staff->department_id && !in_array('ASSISTANT_REGISTRAR', $roles)) {
+                $query->whereHas('student', function ($q) use ($user) {
+                    $q->where('department_id', $user->staff->department_id);
+                });
+            } elseif ($user->staff && $user->staff->faculty_id) {
+                // Faculty scope for Assistant Registrars
+                $query->whereHas('student', function ($q) use ($user) {
+                    $q->where('faculty_id', $user->staff->faculty_id);
+                });
+            }
         }
 
         $registrations = $query->latest('submitted_at')->get();
@@ -87,16 +90,19 @@ class ApprovalController extends Controller
         $level = null;
 
         // Dynamic State Machine: Evaluate transition based on registration's current status and user's role capabilities
-        if ($currentStatus === RegistrationStatusEnum::SUBMITTED->value && in_array('ACADEMIC_ADVISER', $roles)) {
-            $level = 'ADVISER';
-            $nextStatus = RegistrationStatusEnum::ADVISER_APPROVED->value;
-        } elseif ($currentStatus === RegistrationStatusEnum::ADVISER_APPROVED->value && in_array('HEAD_OF_DEPARTMENT', $roles)) {
+        if (in_array('SYSTEM_ADMIN', $roles)) {
+            // System Admin has full override control over any step
+            $level = 'SYSTEM_ADMIN';
+            if ($currentStatus === RegistrationStatusEnum::SUBMITTED->value) {
+                $nextStatus = RegistrationStatusEnum::HOD_APPROVED->value;
+            } else {
+                $nextStatus = RegistrationStatusEnum::REGISTERED->value;
+                $registration->approved_at = now();
+            }
+        } elseif ($currentStatus === RegistrationStatusEnum::SUBMITTED->value && in_array('HEAD_OF_DEPARTMENT', $roles)) {
             $level = 'HOD';
             $nextStatus = RegistrationStatusEnum::HOD_APPROVED->value;
-        } elseif ($currentStatus === RegistrationStatusEnum::HOD_APPROVED->value && in_array('FACULTY_COORDINATOR', $roles)) {
-            $level = 'DEAN';
-            $nextStatus = RegistrationStatusEnum::FACULTY_APPROVED->value;
-        } elseif ($currentStatus === RegistrationStatusEnum::FACULTY_APPROVED->value && (in_array('ASSISTANT_REGISTRAR', $roles) || in_array('CENTRAL_ADMIN', $roles))) {
+        } elseif (($currentStatus === RegistrationStatusEnum::HOD_APPROVED->value || $currentStatus === RegistrationStatusEnum::FACULTY_APPROVED->value) && in_array('ASSISTANT_REGISTRAR', $roles)) {
             $level = 'FACULTY_AR';
             $nextStatus = RegistrationStatusEnum::REGISTERED->value;
             $registration->approved_at = now();
@@ -107,20 +113,22 @@ class ApprovalController extends Controller
             ], 422);
         }
 
-        // Scope verification: Confirm student belongs to reviewer's department / faculty
-        if ($user->staff && $user->staff->department_id && in_array($level, ['ADVISER', 'HOD'])) {
-            if ($registration->student->department_id !== $user->staff->department_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized: Student belongs to another department.',
-                ], 403);
-            }
-        } elseif ($user->staff && $user->staff->faculty_id && !in_array('CENTRAL_ADMIN', $roles)) {
-            if ($registration->student->faculty_id !== $user->staff->faculty_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized: Student belongs to another faculty.',
-                ], 403);
+        // Scope verification: Confirm student belongs to reviewer's department / faculty (System Admin bypasses)
+        if (!in_array('SYSTEM_ADMIN', $roles)) {
+            if ($user->staff && $user->staff->department_id && $level === 'HOD') {
+                if ($registration->student->department_id !== $user->staff->department_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized: Student belongs to another department.',
+                    ], 403);
+                }
+            } elseif ($user->staff && $user->staff->faculty_id) {
+                if ($registration->student->faculty_id !== $user->staff->faculty_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized: Student belongs to another faculty.',
+                    ], 403);
+                }
             }
         }
 
