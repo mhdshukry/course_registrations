@@ -164,6 +164,37 @@ class ValidationEngine {
   static int _timeToMinutes(String timeStr) {
     final parts = timeStr.split(':');
     if (parts.length != 2) return 0;
-    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    return hour * 60 + minute;
+  }
+
+  /// Validate that no dropped courses are selected (dropped courses cannot be re-registered)
+  static ValidationResult validateDroppedCourses({
+    required List<Course> selectedCourses,
+    required List<AcademicCourseRecord> academicRecords,
+  }) {
+    List<String> errors = [];
+    List<String> warnings = [];
+
+    for (var course in selectedCourses) {
+      final droppedRecord = academicRecords
+          .cast<AcademicCourseRecord?>()
+          .firstWhere(
+            (r) => r?.courseCode == course.code && r?.isDropped == true,
+            orElse: () => null,
+          );
+      if (droppedRecord != null) {
+        errors.add(
+          'Cannot register for ${course.code} (${course.title}): Under university academic regulations, dropped subjects cannot be registered again.',
+        );
+      }
+    }
+
+    return ValidationResult(
+      isValid: errors.isEmpty,
+      warnings: warnings,
+      errors: errors,
+    );
   }
 }
