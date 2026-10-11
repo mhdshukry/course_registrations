@@ -14,8 +14,7 @@ class StatusPillBadge extends StatelessWidget {
       RegistrationStatus.registered ||
       RegistrationStatus.locked ||
       RegistrationStatus.facultyApproved ||
-      RegistrationStatus.departmentApproved ||
-      RegistrationStatus.adviserApproved => (
+      RegistrationStatus.departmentApproved => (
         RuslColors.successGreen.withValues(alpha: 0.15),
         RuslColors.successGreen,
       ),
@@ -480,6 +479,8 @@ class CourseCardItem extends StatelessWidget {
           0.0,
           1.0,
         );
+    // Normal semester courses are assigned by curriculum; enrolment totals do
+    // not block a student from registering compulsory or optional modules.
     final isFull = offering.isFull;
 
     return AnimatedContainer(
