@@ -51,12 +51,8 @@ INSERT INTO semesters (semester_id, academic_year_id, semester_number, semester_
 -- -----------------------------------------------------------------------------
 INSERT INTO roles (role_id, role_name) VALUES
 ('r_student',     'STUDENT'),
-('r_adviser',     'ACADEMIC_ADVISER'),
-('r_lecturer',    'LECTURER'),
 ('r_hod',         'HEAD_OF_DEPARTMENT'),
-('r_coordinator', 'FACULTY_COORDINATOR'),
 ('r_ar',          'ASSISTANT_REGISTRAR'),
-('r_central',     'CENTRAL_ADMIN'),
 ('r_sysadmin',    'SYSTEM_ADMIN');
 
 -- -----------------------------------------------------------------------------
@@ -64,24 +60,18 @@ INSERT INTO roles (role_id, role_name) VALUES
 -- -----------------------------------------------------------------------------
 INSERT INTO users (user_id, username, email, password_hash, account_status) VALUES
 ('u_std01', 'student_nafis',  'student.nafis@rjt.ac.lk',   '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
-('u_adv01', 'adviser_chanda', 'chandanajay@rjt.ac.lk',     '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
-('u_lec01', 'lecturer_sarah', 'sarah.johnson@rjt.ac.lk',   '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
-('u_hod01', 'hod_perera',     'sarath.perera@rjt.ac.lk',   '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
-('u_coo01', 'coord_kanthi',   'kanthi.silva@rjt.ac.lk',    '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
-('u_ar001', 'ar_dilhani',     'ar.fot@rjt.ac.lk',          '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
-('u_cen01', 'central_admin',  'registration@rjt.ac.lk',    '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
-('u_sys01', 'sys_admin',      'itcenter@rjt.ac.lk',        '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE');
+('u_lec01', 'wiraj_w',        'wiraj@tec.rjt.ac.lk',       '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
+('u_hod01', 'hod_ict',        'lahiruj@tec.rjt.ac.lk',     '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
+('u_ar001', 'ar_fot',         'ar@tec.rjt.ac.lk',          '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
+('u_dean01','dean_fot',       'dean@tec.rjt.ac.lk',        '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE'),
+('u_sys01', 'sysadmin',       'director@cc.rjt.ac.lk',     '$2a$12$eImiTXuWVxfM37uY4JANjO5a6R8f... (RuslPass#2026)', 'ACTIVE');
 
 -- Assign User Roles
 INSERT INTO user_roles (user_role_id, user_id, role_id, faculty_id, department_id) VALUES
 ('ur_1', 'u_std01', 'r_student',     'f_fot', 'd_ict'),
-('ur_2', 'u_adv01', 'r_adviser',     'f_fot', 'd_ict'),
-('ur_3', 'u_lec01', 'r_lecturer',    'f_fot', 'd_ict'),
-('ur_4', 'u_hod01', 'r_hod',         'f_fot', 'd_ict'),
-('ur_5', 'u_coo01', 'r_coordinator', 'f_fot', 'd_ict'),
-('ur_6', 'u_ar001', 'r_ar',          'f_fot', NULL),
-('ur_7', 'u_cen01', 'r_central',     NULL,    NULL),
-('ur_8', 'u_sys01', 'r_sysadmin',    NULL,    NULL);
+('ur_3', 'u_hod01', 'r_hod',         'f_fot', 'd_ict'),
+('ur_5', 'u_ar001', 'r_ar',          'f_fot', NULL),
+('ur_6', 'u_sys01', 'r_sysadmin',    NULL,    NULL);
 
 -- -----------------------------------------------------------------------------
 -- 7. STUDENT PROFILE SEED DATA
