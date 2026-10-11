@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
+import '../../core/pdf_generator.dart';
 import '../../domain/models.dart';
 import '../../services/app_service.dart';
 import '../widgets/custom_widgets.dart';
@@ -70,6 +71,13 @@ class RegistrationStatusProScreen extends StatelessWidget {
                   ],
                   const SizedBox(height: 22),
                   _RegisteredSubjects(subjects: subjects),
+                  if (app.activeRegistrationStatus ==
+                          RegistrationStatus.registered ||
+                      app.activeRegistrationStatus ==
+                          RegistrationStatus.locked) ...[
+                    const SizedBox(height: 22),
+                    _SealedSlipDownload(app: app),
+                  ],
                   if (app.approvalHistoryList.isNotEmpty) ...[
                     const SizedBox(height: 22),
                     _DecisionHistory(history: app.approvalHistoryList),
@@ -81,6 +89,67 @@ class RegistrationStatusProScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _SealedSlipDownload extends StatelessWidget {
+  final AppService app;
+  const _SealedSlipDownload({required this.app});
+
+  @override
+  Widget build(BuildContext context) {
+    final courses = app.selectedOfferingsList
+        .map(
+          (offering) => app.courses.firstWhere(
+            (course) => course.id == offering.courseId,
+          ),
+        )
+        .toList();
+    return _Panel(
+      title: 'AR-sealed registration slip',
+      subtitle: 'Available after official sealing by the Assistant Registrar',
+      icon: Icons.workspace_premium_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: RuslColors.warningOrange.withValues(alpha: .09),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(
+                color: RuslColors.warningOrange.withValues(alpha: .3),
+              ),
+            ),
+            child: const Text(
+              'Download and print this sealed slip. Sign it and submit the printed copy manually to your Faculty Registry according to the announced deadline.',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: 13),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: courses.isEmpty
+                  ? null
+                  : () => PdfSlipGenerator.downloadOrPrintPdf(
+                      student: app.activeStudent,
+                      registeredCourses: courses,
+                      totalCredits: app.totalSelectedCredits,
+                      academicYear: app.currentRegistrationRecord.academicYear,
+                      semesterNumber:
+                          app.currentRegistrationRecord.semesterNumber,
+                      verificationCode: app.verificationToken,
+                      status: 'OFFICIALLY SEALED',
+                    ),
+              icon: const Icon(Icons.download_rounded),
+              label: const Text('Download sealed registration slip'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -236,27 +305,17 @@ class _ApprovalJourney extends StatelessWidget {
     const stages = [
       (
         'Submitted by student',
-        'Your subject selection was sent for review',
+        'Your subject selection was sent for HoD review',
         Icons.send_rounded,
       ),
       (
-        'Academic Adviser',
-        'Curriculum and credit-load verification',
-        Icons.person_search_rounded,
-      ),
-      (
         'Head of Department',
-        'Department academic endorsement',
+        'Department curriculum & cohort endorsement',
         Icons.account_balance_outlined,
       ),
       (
-        'Faculty Coordinator',
-        'Faculty-level verification',
-        Icons.rule_folder_outlined,
-      ),
-      (
         'Assistant Registrar',
-        'Final confirmation and registration lock',
+        'Official university seal and registration lock',
         Icons.verified_user_outlined,
       ),
     ];
@@ -372,13 +431,13 @@ class _NextAction extends StatelessWidget {
       ),
       RegistrationStatus.changesRequested => (
         'Changes requested',
-        'Your adviser returned the registration. Review the comments, update it, and resubmit.',
+        'The department requested changes. Review the comments, update courses, and resubmit.',
         Icons.sync_problem_rounded,
         RuslColors.warningOrange,
       ),
       RegistrationStatus.rejected => (
         'Registration rejected',
-        'Contact your Academic Adviser for guidance on the next steps.',
+        'Contact your Head of Department for guidance on the next steps.',
         Icons.cancel_outlined,
         RuslColors.errorRed,
       ),
@@ -712,15 +771,14 @@ class _MiniBadge extends StatelessWidget {
 int _stageIndex(RegistrationStatus status) => switch (status) {
   RegistrationStatus.draft => 0,
   RegistrationStatus.submitted || RegistrationStatus.changesRequested => 1,
-  RegistrationStatus.adviserApproved => 2,
-  RegistrationStatus.departmentApproved => 3,
-  RegistrationStatus.facultyApproved => 4,
-  RegistrationStatus.registered || RegistrationStatus.locked => 5,
+  RegistrationStatus.departmentApproved => 2,
+  RegistrationStatus.facultyApproved => 2,
+  RegistrationStatus.registered || RegistrationStatus.locked => 3,
   RegistrationStatus.rejected => 1,
 };
 
 double _statusProgress(RegistrationStatus status) =>
-    (_stageIndex(status) / 5).clamp(0, 1);
+    (_stageIndex(status) / 4).clamp(0, 1);
 
 String _date(DateTime value) =>
     '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
