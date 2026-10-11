@@ -223,7 +223,7 @@ class RegistrationController extends Controller
     {
         $user = $request->user();
         $roles = $user->roles->pluck('role_name')->toArray();
-        $allowed = ['ASSISTANT_REGISTRAR', 'CENTRAL_ADMIN', 'FACULTY_COORDINATOR', 'HEAD_OF_DEPARTMENT'];
+        $allowed = ['ASSISTANT_REGISTRAR', 'SYSTEM_ADMIN', 'HEAD_OF_DEPARTMENT'];
 
         if (!array_intersect($roles, $allowed)) {
             return response()->json(['success' => false, 'message' => 'Unauthorized for export.'], 403);
