@@ -125,4 +125,140 @@ class RuslTheme {
       ),
     );
   }
+
+  static ThemeData get darkTheme {
+    final baseTextTheme = GoogleFonts.urbanistTextTheme(
+      ThemeData.dark().textTheme,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: const Color(0xFF121214),
+      primaryColor: RuslColors.accentYellow,
+      colorScheme: const ColorScheme.dark(
+        primary: RuslColors.accentYellow,
+        onPrimary: RuslColors.darkText,
+        surface: Color(0xFF1E1F24),
+        onSurface: Color(0xFFEDEDF0),
+        outline: Color(0xFF33363F),
+      ),
+      textTheme: baseTextTheme.copyWith(
+        displayLarge: GoogleFonts.urbanist(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFEDEDF0),
+          height: 1.2,
+        ),
+        displayMedium: GoogleFonts.urbanist(
+          fontSize: 26,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFEDEDF0),
+          height: 1.2,
+        ),
+        headlineMedium: GoogleFonts.urbanist(
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFFEDEDF0),
+        ),
+        titleLarge: GoogleFonts.urbanist(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFFEDEDF0),
+        ),
+        titleMedium: GoogleFonts.urbanist(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFFEDEDF0),
+        ),
+        bodyLarge: GoogleFonts.urbanist(
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
+          color: const Color(0xFFEDEDF0),
+        ),
+        bodyMedium: GoogleFonts.urbanist(
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          color: const Color(0xFFA0A3AB),
+        ),
+        labelLarge: GoogleFonts.urbanist(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFFEDEDF0),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1E1F24),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: Color(0xFF33363F), width: 1),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF26282E),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF33363F), width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF33363F), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: RuslColors.accentYellow, width: 1.8),
+        ),
+        hintStyle: GoogleFonts.urbanist(
+          fontSize: 14,
+          color: const Color(0xFFA0A3AB),
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: RuslColors.accentYellow,
+          foregroundColor: RuslColors.darkText,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          textStyle: GoogleFonts.urbanist(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFEDEDF0),
+          side: const BorderSide(color: Color(0xFF33363F), width: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          textStyle: GoogleFonts.urbanist(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+extension RuslThemeContext on BuildContext {
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  Color get surfaceColor => isDarkMode ? const Color(0xFF1E1F24) : RuslColors.pureWhite;
+  Color get cardSubtleColor => isDarkMode ? const Color(0xFF26282E) : RuslColors.cardSubtle;
+  Color get scaffoldBgColor => isDarkMode ? const Color(0xFF121214) : RuslColors.bgCream;
+  Color get textPrimaryColor => isDarkMode ? const Color(0xFFEDEDF0) : RuslColors.darkText;
+  Color get textSecondaryColor => isDarkMode ? const Color(0xFFA0A3AB) : RuslColors.textMuted;
+  Color get borderColor => isDarkMode ? const Color(0xFF33363F) : RuslColors.borderGrey;
 }
