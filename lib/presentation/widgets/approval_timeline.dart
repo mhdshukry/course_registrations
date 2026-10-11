@@ -21,11 +21,11 @@ class ApprovalTimelineWidget extends StatelessWidget {
       ),
       _StageInfo(
         stepNumber: 2,
-        title: 'Academic Adviser Review',
-        role: 'Adviser',
-        subtitle: 'Curriculum & credit limit endorsement',
+        title: 'Department Endorsement',
+        role: 'Head of Department',
+        subtitle: 'Curriculum requirements & batch endorsement',
         isReached: status != RegistrationStatus.draft,
-        isCompleted: _isPastAdviser(status),
+        isCompleted: _isPastHod(status),
         isCurrent:
             status == RegistrationStatus.submitted ||
             status == RegistrationStatus.changesRequested,
@@ -33,32 +33,16 @@ class ApprovalTimelineWidget extends StatelessWidget {
       ),
       _StageInfo(
         stepNumber: 3,
-        title: 'Department Endorsement',
-        role: 'Head of Department',
-        subtitle: 'Capacity quotas & prerequisite waivers',
-        isReached: _isPastAdviser(status),
-        isCompleted: _isPastHod(status),
-        isCurrent: status == RegistrationStatus.adviserApproved,
-      ),
-      _StageInfo(
-        stepNumber: 4,
-        title: 'Faculty Coordination',
-        role: 'Faculty Coordinator',
-        subtitle: 'Cross-department timetable verification',
-        isReached: _isPastHod(status),
-        isCompleted: _isPastCoordinator(status),
-        isCurrent: status == RegistrationStatus.departmentApproved,
-      ),
-      _StageInfo(
-        stepNumber: 5,
         title: 'Official Seal & Lock',
         role: 'Assistant Registrar',
-        subtitle: 'Exam eligibility registry confirmed',
-        isReached: _isPastCoordinator(status),
+        subtitle: 'Exam eligibility registry confirmed & sealed',
+        isReached: _isPastHod(status),
         isCompleted:
             status == RegistrationStatus.registered ||
             status == RegistrationStatus.locked,
-        isCurrent: status == RegistrationStatus.facultyApproved,
+        isCurrent:
+            status == RegistrationStatus.departmentApproved ||
+            status == RegistrationStatus.facultyApproved,
       ),
     ];
 
@@ -275,23 +259,9 @@ class ApprovalTimelineWidget extends StatelessWidget {
     );
   }
 
-  static bool _isPastAdviser(RegistrationStatus s) {
-    return s == RegistrationStatus.adviserApproved ||
-        s == RegistrationStatus.departmentApproved ||
-        s == RegistrationStatus.facultyApproved ||
-        s == RegistrationStatus.registered ||
-        s == RegistrationStatus.locked;
-  }
-
   static bool _isPastHod(RegistrationStatus s) {
     return s == RegistrationStatus.departmentApproved ||
         s == RegistrationStatus.facultyApproved ||
-        s == RegistrationStatus.registered ||
-        s == RegistrationStatus.locked;
-  }
-
-  static bool _isPastCoordinator(RegistrationStatus s) {
-    return s == RegistrationStatus.facultyApproved ||
         s == RegistrationStatus.registered ||
         s == RegistrationStatus.locked;
   }
@@ -304,7 +274,6 @@ class ApprovalTimelineWidget extends StatelessWidget {
         return RuslColors.warningOrange;
       case RegistrationStatus.changesRequested:
         return RuslColors.errorRed;
-      case RegistrationStatus.adviserApproved:
       case RegistrationStatus.departmentApproved:
       case RegistrationStatus.facultyApproved:
         return Colors.blue.shade700;
