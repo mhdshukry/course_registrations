@@ -138,7 +138,9 @@ class SubjectRegistrationScreen extends StatelessWidget {
         content: Text(
           submitted
               ? 'Your subject registration was submitted successfully.'
-              : 'Registration could not be submitted.',
+              : (app.selectedTimetableClashes.isNotEmpty
+                  ? 'Registration blocked: Timetable clash between ${app.selectedTimetableClashes.first.courseA.code} and ${app.selectedTimetableClashes.first.courseB.code}.'
+                  : 'Registration could not be submitted. Please verify credit limits and compulsory subjects.'),
         ),
         backgroundColor: submitted
             ? RuslColors.successGreen
