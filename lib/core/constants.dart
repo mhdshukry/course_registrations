@@ -18,16 +18,16 @@ class RuslColors {
   static const Color successGreen = Color(0xFF2E7D32);
   static const Color warningOrange = Color(0xFFE65100);
   static const Color errorRed = Color(0xFFC62828);
+  static const Color primaryMaroon = Color(
+    0xFF7B1113,
+  ); // #7B1113 Official RUSL University Maroon
 }
 
 enum UserRole {
   student,
-  academicAdviser,
-  lecturer,
   headOfDepartment,
-  facultyCoordinator,
   assistantRegistrar,
-  centralAdmin,
+  dean,
   systemAdmin,
 }
 
@@ -36,18 +36,12 @@ extension UserRoleExtension on UserRole {
     switch (this) {
       case UserRole.student:
         return 'Student';
-      case UserRole.academicAdviser:
-        return 'Academic Adviser';
-      case UserRole.lecturer:
-        return 'Lecturer';
       case UserRole.headOfDepartment:
         return 'Head of Department (HoD)';
-      case UserRole.facultyCoordinator:
-        return 'Faculty Academic Coordinator';
       case UserRole.assistantRegistrar:
         return 'Assistant Registrar (AR)';
-      case UserRole.centralAdmin:
-        return 'Central University Admin';
+      case UserRole.dean:
+        return 'Dean';
       case UserRole.systemAdmin:
         return 'System Administrator';
     }
@@ -57,18 +51,12 @@ extension UserRoleExtension on UserRole {
     switch (this) {
       case UserRole.student:
         return 'Student';
-      case UserRole.academicAdviser:
-        return 'Adviser';
-      case UserRole.lecturer:
-        return 'Lecturer';
       case UserRole.headOfDepartment:
         return 'HoD';
-      case UserRole.facultyCoordinator:
-        return 'Coord';
       case UserRole.assistantRegistrar:
         return 'AR';
-      case UserRole.centralAdmin:
-        return 'Admin';
+      case UserRole.dean:
+        return 'Dean';
       case UserRole.systemAdmin:
         return 'SysAdmin';
     }
@@ -111,7 +99,6 @@ enum RegistrationStatus {
   draft,
   submitted,
   changesRequested,
-  adviserApproved,
   departmentApproved,
   facultyApproved,
   registered,
@@ -128,8 +115,6 @@ extension RegistrationStatusExtension on RegistrationStatus {
         return 'Submitted';
       case RegistrationStatus.changesRequested:
         return 'Changes Requested';
-      case RegistrationStatus.adviserApproved:
-        return 'Adviser Approved';
       case RegistrationStatus.departmentApproved:
         return 'HoD Approved';
       case RegistrationStatus.facultyApproved:
