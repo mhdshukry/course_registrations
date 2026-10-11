@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\SpecialRequestController;
-use App\Http\Controllers\Api\WaitingListController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -54,14 +53,6 @@ Route::prefix('v1')->group(function () {
             Route::get('/pending', [ApprovalController::class, 'pending']);
             Route::post('/{id}/approve', [ApprovalController::class, 'approve']);
             Route::post('/{id}/request-changes', [ApprovalController::class, 'requestChanges']);
-        });
-
-        // Waiting Lists
-        Route::prefix('waiting-list')->group(function () {
-            Route::get('/my-queues', [WaitingListController::class, 'myWaitingLists']);
-            Route::post('/join', [WaitingListController::class, 'join']);
-            Route::post('/leave', [WaitingListController::class, 'leave']);
-            Route::post('/{id}/claim', [WaitingListController::class, 'claim']);
         });
 
         // Special Petitions & Requests
