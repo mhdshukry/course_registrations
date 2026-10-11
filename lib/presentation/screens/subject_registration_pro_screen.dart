@@ -335,16 +335,188 @@ class _SubjectSections extends StatelessWidget {
       ),
       const SizedBox(height: 10),
       ...optional.map(
-        (o) => _SubjectCard(
-          course: SubjectRegistrationProScreen._course(app, o),
-          offering: o,
-          compulsory: false,
-          selected: app.selectedOfferingIds.contains(o.id),
-          enabled: editable && app.isRegistrationOpen,
-          onTap: () => app.toggleCourseSelection(o.id),
-        ),
+        (o) {
+          final course = SubjectRegistrationProScreen._course(app, o);
+          final isDropped = app.isCourseDropped(course.code);
+          return _SubjectCard(
+            course: course,
+            offering: o,
+            compulsory: false,
+            selected: app.selectedOfferingIds.contains(o.id),
+            enabled: editable && app.isRegistrationOpen && !isDropped,
+            onTap: isDropped ? null : () => app.toggleCourseSelection(o.id),
+          );
+        },
       ),
+      if (app.repeatEligibleAcademicRecords.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _SectionTitle(
+          icon: Icons.replay_rounded,
+          title: 'Repeat Examination Subjects',
+          subtitle:
+              '${app.repeatEligibleAcademicRecords.length} subject(s) eligible (Medical / Results Failed)',
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D9488).withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: const Color(0xFF0D9488).withValues(alpha: .3),
+            ),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.event_available_rounded,
+                color: Color(0xFF0F766E),
+                size: 20,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Lecture Attendance Exemption: Under university regulations, students registered for Repeat or Medical concession subjects are exempt from lecture attendance. Repeat modules are exam-only, do not appear on your weekly timetable, and will not cause schedule clashes.',
+                  style: TextStyle(
+                    fontFamily: 'Urbanist',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF134E4A),
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...app.repeatEligibleAcademicRecords.map(
+          (record) => _RepeatSubjectCard(
+            record: record,
+            reason: app.repeatReasonFor(record),
+            requested: app.requestedRepeatRecordIds.contains(record.id),
+            enabled: editable && app.isRegistrationOpen,
+            onChanged: () => app.toggleRepeatSubjectRequest(record.id),
+          ),
+        ),
+      ],
+      if (app.droppedAcademicRecords.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: RuslColors.errorRed.withValues(alpha: .06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: RuslColors.errorRed.withValues(alpha: .25)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.block_rounded, color: RuslColors.errorRed, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Dropped Subjects (Cannot Re-register)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: RuslColors.errorRed,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Under faculty academic regulations, once a student drops a subject, they cannot register for it again. Dropped: ${app.droppedAcademicRecords.map((r) => "${r.courseCode} (${r.courseTitle})").join(", ")}.',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: RuslColors.darkText,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     ],
+  );
+}
+
+class _RepeatSubjectCard extends StatelessWidget {
+  final AcademicCourseRecord record;
+  final String reason;
+  final bool requested;
+  final bool enabled;
+  final VoidCallback onChanged;
+
+  const _RepeatSubjectCard({
+    required this.record,
+    required this.reason,
+    required this.requested,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(15),
+    decoration: BoxDecoration(
+      color: requested
+          ? RuslColors.warningOrange.withValues(alpha: .08)
+          : Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(
+        color: requested ? RuslColors.warningOrange : RuslColors.borderGrey,
+      ),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundColor: RuslColors.warningOrange.withValues(alpha: .15),
+          foregroundColor: RuslColors.warningOrange,
+          child: const Icon(Icons.replay_rounded),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${record.courseCode} - ${record.courseTitle}',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 5),
+              Wrap(
+                spacing: 7,
+                runSpacing: 5,
+                children: [
+                  _Tag(reason, strong: true),
+                  _Tag('${record.credits} credits'),
+                  _Tag(record.semesterLabel),
+                  const _Tag('Exam Only • Attendance Exempt', strong: true),
+                ],
+              ),
+              const SizedBox(height: 7),
+              const Text(
+                'The original attempt remains in the academic record. AR verifies eligibility and assigns the exam offering. No lecture attendance or weekly timetable schedule is required.',
+                style: TextStyle(fontSize: 11, color: RuslColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+        Checkbox(
+          value: requested,
+          onChanged: enabled ? (_) => onChanged() : null,
+        ),
+      ],
+    ),
   );
 }
 
@@ -459,10 +631,7 @@ class _SubjectCard extends StatelessWidget {
                               fontSize: 15,
                             ),
                           ),
-                          _Tag(
-                            compulsory ? 'Compulsory' : 'Optional',
-                            strong: compulsory,
-                          ),
+                          _Tag(course.courseType.nameLabel, strong: compulsory),
                           _Tag('${course.creditValue} credits'),
                         ],
                       ),
@@ -749,7 +918,9 @@ class _Summary extends StatelessWidget {
         content: Text(
           ok
               ? 'Subject registration submitted successfully.'
-              : 'Registration could not be submitted.',
+              : (app.selectedTimetableClashes.isNotEmpty
+                    ? 'Registration blocked: Timetable clash between ${app.selectedTimetableClashes.first.courseA.code} and ${app.selectedTimetableClashes.first.courseB.code} on ${app.selectedTimetableClashes.first.day}.'
+                    : 'Registration could not be submitted. Verify credit limits and compulsory course requirements.'),
         ),
         backgroundColor: ok ? RuslColors.successGreen : RuslColors.errorRed,
       ),
