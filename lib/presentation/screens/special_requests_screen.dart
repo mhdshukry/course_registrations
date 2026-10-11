@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
+import '../../domain/models.dart';
 import '../../services/app_service.dart';
 
 class SpecialRequestsScreen extends StatefulWidget {
@@ -250,15 +251,30 @@ class _SpecialRequestsScreenState extends State<SpecialRequestsScreen> {
         ),
       );
 
-  Widget _status(String value) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+  Widget _status(SpecialRequestStatus status) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     decoration: BoxDecoration(
-      color: RuslColors.accentYellow.withValues(alpha: .4),
+      color: switch (status) {
+        SpecialRequestStatus.approved =>
+          RuslColors.successGreen.withValues(alpha: .15),
+        SpecialRequestStatus.rejected =>
+          RuslColors.errorRed.withValues(alpha: .15),
+        SpecialRequestStatus.pending =>
+          RuslColors.accentYellow.withValues(alpha: .4),
+      },
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
-      value.toUpperCase(),
-      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
+      status.label.toUpperCase(),
+      style: TextStyle(
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        color: switch (status) {
+          SpecialRequestStatus.approved => RuslColors.successGreen,
+          SpecialRequestStatus.rejected => RuslColors.errorRed,
+          SpecialRequestStatus.pending => RuslColors.darkText,
+        },
+      ),
     ),
   );
 }
