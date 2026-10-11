@@ -205,7 +205,7 @@ class RegistrationService
             'user_id' => $student->user_id,
             'notification_type' => 'STATUS_CHANGE',
             'title' => 'Registration Submitted',
-            'message' => 'Your course registration slip has been forwarded to your Academic Adviser for review.',
+            'message' => 'Your course registration slip has been forwarded to the Head of Department (HoD) for endorsement.',
             'is_read' => false,
             'sent_at' => now(),
         ]);
