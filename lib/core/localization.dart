@@ -30,12 +30,10 @@ class RuslLocalization {
 
       // Roles
       'role_student': 'Student',
-      'role_adviser': 'Academic Adviser',
-      'role_lecturer': 'Lecturer',
       'role_hod': 'Head of Department (HoD)',
       'role_coordinator': 'Faculty Academic Coordinator',
       'role_ar': 'Assistant Registrar (AR)',
-      'role_admin': 'Central University Admin',
+      'role_admin': 'System Administrator',
 
       // Authentication
       'sign_in_title': 'Sign In to Your Account',
@@ -160,12 +158,10 @@ class RuslLocalization {
 
       // Roles
       'role_student': 'ශිෂ්‍යයා',
-      'role_adviser': 'අධ්‍යයන උපදේශක',
-      'role_lecturer': 'කථිකාචාර්ය',
       'role_hod': 'අංශාධිපති (HoD)',
       'role_coordinator': 'පීඨ සම්බන්ධීකාරක',
       'role_ar': 'සහකාර ලේඛකාධිකාරී (AR)',
-      'role_admin': 'මධ්‍යම පරිපාලක',
+      'role_admin': 'පද්ධති පරිපාලක (Admin)',
 
       // Authentication
       'sign_in_title': 'ඔබගේ ගිණුමට ඇතුල් වන්න',
@@ -291,12 +287,10 @@ class RuslLocalization {
 
       // Roles
       'role_student': 'மாணவர்',
-      'role_adviser': 'கல்வி ஆலோசகர்',
-      'role_lecturer': 'விரிவுரையாளர்',
       'role_hod': 'துறைத் தலைவர் (HoD)',
       'role_coordinator': 'பீட ஒருங்கிணைப்பாளர்',
       'role_ar': 'உதவி பதிவாளர் (AR)',
-      'role_admin': 'மத்திய நிர்வாகி',
+      'role_admin': 'கணினி நிர்வாகி (Admin)',
 
       // Authentication
       'sign_in_title': 'உங்கள் கணக்கில் உள்நுழையவும்',
